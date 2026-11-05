@@ -7,6 +7,13 @@ export const gameConfig = {
   parent: 'game',
   backgroundColor: '#c4894c',
   disableContextMenu: true,
+  // Higher-quality face rendering: smooth edges + trilinear mipmaps so balls stay crisp
+  // (not shimmery/blurry) as they scale down from the source PNGs.
+  render: {
+    antialias: true,
+    mipmapFilter: 'LINEAR_MIPMAP_LINEAR',
+    roundPixels: false,
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

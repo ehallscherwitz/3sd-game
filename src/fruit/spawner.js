@@ -1,4 +1,4 @@
-import { DROP_COOLDOWN_MS } from '../game/constants.js';
+import { DROP_COOLDOWN_MS, SFX_DROP } from '../game/constants.js';
 import { rollDropTier } from './spawnTable.js';
 
 export class Spawner {
@@ -27,6 +27,7 @@ export class Spawner {
 
     const tier = this.session.currentTier;
     this.world.spawn(aim.x, aim.y, tier, { vx: 0, vy: 2.2, time });
+    if (this.world.scene.sound) this.world.scene.sound.play(SFX_DROP, { volume: 0.5 });
     this.session.currentTier = this.session.nextTier;
     this.session.nextTier = rollDropTier(this.session.highestTierCreated);
     this.session.dropReadyAt = time + DROP_COOLDOWN_MS;

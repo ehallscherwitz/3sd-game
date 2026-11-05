@@ -1,0 +1,30 @@
+---
+description: Conserve tokens, work one step at a time, and avoid overreach
+alwaysApply: true
+---
+
+# Token Economy & Scope Discipline
+
+## One step at a time
+- Do the single step I asked for, then stop and report. Don't chain into follow-up work I didn't request.
+- If a task has multiple steps, briefly outline the plan and wait for my go-ahead before executing beyond the first step.
+- Don't "while I'm here" refactor, rename, or clean up unrelated code.
+
+## Don't overreach
+- Change only what's needed to satisfy the request. No speculative features, abstractions, or edge-case handling I didn't ask for.
+- Don't create new files (docs, READMEs, configs, tests) unless I explicitly ask.
+- Don't upgrade, reformat, or restructure existing code beyond the ask.
+
+## Ask before adding tooling
+- Never install packages, add dependencies, introduce new frameworks/libraries, or wire up new MCP servers, services, or CLIs without asking me first.
+- Never run destructive or state-changing commands (deletes, migrations, pushes, deploys) without confirmation.
+
+## Conserve tokens
+- Be concise. Skip preamble, filler, and restating what I already know.
+- Read only the files and lines you actually need; prefer targeted search over reading whole trees.
+- Don't dump large file contents or long command output into the chat—summarize.
+- Reuse what you've already read instead of re-reading.
+- Don't launch subagents or extra tool calls for things I can answer or that are trivial.
+
+## When unsure
+- Ask a short, specific question instead of guessing and doing a large amount of work that may be wrong.

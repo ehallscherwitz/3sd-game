@@ -1,6 +1,5 @@
-import Phaser from 'phaser';
 import { PALETTE, VIEW_HEIGHT, VIEW_WIDTH, playfield } from '../game/constants.js';
-import { FRUITS, fruitByTier, paintFruit } from '../fruit/catalog.js';
+import { FRUITS, createFruitNode, fruitByTier, paintFruit } from '../fruit/catalog.js';
 import { leaderboardRows } from './leaderboard.js';
 import { GameState } from '../game/states.js';
 import { FONT, formatScore, makeButton, makeText } from './widgets.js';
@@ -8,7 +7,7 @@ import { FONT, formatScore, makeButton, makeText } from './widgets.js';
 const SCORE_BUBBLE = { x: 180, y: 138, r: 102 };
 const NEXT_BUBBLE = { x: 1100, y: 138, r: 102 };
 const CARD = { x: 22, y: 292, w: 324, h: 292 };
-const EVOLUTION = { x: 1108, y: 500, orbit: 126 };
+const EVOLUTION = { x: 1108, y: 500, orbit: 104 };
 
 export class Hud {
   constructor(scene, session, world, danger) {
@@ -40,6 +39,7 @@ export class Hud {
     this.paintRows();
     this.paintGuide();
     this.paintDanger();
+    this.paintEvolutionLocks();
     this.paintEvolutionRing();
     this.paintOverlay();
     this.restart.setVisible(session.state === GameState.RUNNING);
@@ -55,7 +55,7 @@ export class Hud {
     this.scoreLabel = makeText(this.scene, SCORE_BUBBLE.x, SCORE_BUBBLE.y + 68, 'Score!', 32, PALETTE.accent, 22);
     this.scoreLabel.setStroke('#7a3f10', 5);
 
-    this.nextNode = this.scene.add.circle(NEXT_BUBBLE.x, NEXT_BUBBLE.y - 8, 16, 0xffffff).setDepth(22);
+    this.nextNode = createFruitNode(this.scene, NEXT_BUBBLE.x, NEXT_BUBBLE.y - 8, FRUITS[0]).setDepth(22);
     this.nextShine = this.scene.add.circle(NEXT_BUBBLE.x, NEXT_BUBBLE.y - 8, 4, 0xffffff, 0.4).setDepth(23);
     this.nextNode.setVisible(false);
     this.nextShine.setVisible(false);
@@ -73,7 +73,7 @@ export class Hud {
     g.lineStyle(3, PALETTE.cardEdge, 1);
     g.strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 18);
 
-    const title = makeText(this.scene, CARD.x + 36, CARD.y + 32, 'Friends Leaderboard', 18, PALETTE.ink, 22);
+    const title = makeText(this.scene, CARD.x + 36, CARD.y + 32, 'Global Leaderboard', 18, PALETTE.ink, 22);
     title.setOrigin(0, 0.5);
 
     this.rows = [];
@@ -93,11 +93,12 @@ export class Hud {
     g.fillStyle(0xc6ef6a, 0.5);
     g.fillCircle(EVOLUTION.x, EVOLUTION.y + 6, 150);
 
+    this.drawEvolutionArrow();
+
     const spots = layoutEvolution();
     this.icons = FRUITS.map((fruit, index) => {
       const spot = spots[index];
-      const node = this.scene.add.circle(spot.x, spot.y, spot.radius, fruit.visual.fill).setDepth(4);
-      node.setStrokeStyle(Math.max(2, spot.radius * 0.14), fruit.visual.stroke, 1);
+      const node = createFruitNode(this.scene, spot.x, spot.y, fruit).setDepth(4);
       const shine = this.scene.add.circle(
         spot.x - spot.radius * 0.28,
         spot.y - spot.radius * 0.28,
@@ -105,10 +106,54 @@ export class Hud {
         0xffffff,
         0.45,
       ).setDepth(5);
-      return { x: spot.x, y: spot.y, radius: spot.radius, node, shine, tier: fruit.tier };
+      paintFruit(node, shine, fruit, spot.radius / fruit.radius);
+      // Locked tiers show a white "?" instead of the face until reached.
+      const query = makeText(this.scene, spot.x, spot.y, '?', Math.round(spot.radius * 1.7), '#ffffff', 5);
+      query.setStroke('#6b3a0e', Math.max(3, spot.radius * 0.3));
+      return { x: spot.x, y: spot.y, radius: spot.radius, node, shine, query, tier: fruit.tier };
     });
 
     this.ring = this.scene.add.graphics().setDepth(6);
+    this.paintEvolutionLocks();
+  }
+
+  // Reveal a face only once that tier has been created; otherwise show the "?".
+  paintEvolutionLocks() {
+    const reached = this.session.highestTierCreated;
+    for (const icon of this.icons) {
+      const unlocked = icon.tier <= reached;
+      icon.node.setVisible(unlocked);
+      icon.query.setVisible(!unlocked);
+    }
+  }
+
+  // Curved arrow sweeping small -> large to show the faces scale up around the circle.
+  drawEvolutionArrow() {
+    const g = this.scene.add.graphics().setDepth(3);
+    const count = FRUITS.length;
+    const step = (Math.PI * 2) / count;
+    const start = -Math.PI / 2; // smallest sits at the top
+    const r = EVOLUTION.orbit + 26;
+    const a0 = start + step * 0.25;
+    const a1 = start + step * (count - 1) - step * 0.15;
+
+    g.lineStyle(5, 0xffffff, 0.85);
+    g.beginPath();
+    g.arc(EVOLUTION.x, EVOLUTION.y, r, a0, a1, false);
+    g.strokePath();
+
+    // Arrowhead at the large end, pointing along the sweep direction.
+    const ex = EVOLUTION.x + Math.cos(a1) * r;
+    const ey = EVOLUTION.y + Math.sin(a1) * r;
+    const tangent = a1 + Math.PI / 2;
+    const size = 13;
+    g.fillStyle(0xffffff, 0.95);
+    g.beginPath();
+    g.moveTo(ex + Math.cos(tangent) * size, ey + Math.sin(tangent) * size);
+    g.lineTo(ex + Math.cos(tangent + 2.5) * size, ey + Math.sin(tangent + 2.5) * size);
+    g.lineTo(ex + Math.cos(tangent - 2.5) * size, ey + Math.sin(tangent - 2.5) * size);
+    g.closePath();
+    g.fillPath();
   }
 
   drawLiveGuides() {
@@ -130,7 +175,7 @@ export class Hud {
       .setStrokeStyle(4, PALETTE.cardEdge)
       .setDepth(401);
 
-    this.overlayTitle = makeText(this.scene, VIEW_WIDTH / 2, 268, 'Merge Space', 42, PALETTE.ink, 402);
+    this.overlayTitle = makeText(this.scene, VIEW_WIDTH / 2, 268, '3SD Go!', 42, PALETTE.ink, 402);
     this.overlayBody = this.scene.add.text(VIEW_WIDTH / 2, 360, '', {
       fontFamily: FONT,
       fontSize: '22px',
@@ -221,8 +266,8 @@ export class Hud {
     else this.dim.disableInteractive();
 
     if (state === GameState.START) {
-      this.overlayTitle.setText('Merge Space');
-      this.overlayBody.setText('Move the fruit across the top.\nClick to drop it.\nMatching fruits merge into the next size.');
+      this.overlayTitle.setText('3SD Go!');
+      this.overlayBody.setText('Move the face across the top.\nClick to drop it.\nMatching faces merge into the next size.');
       this.play.caption.setText('Play');
     } else if (state === GameState.GAMEOVER) {
       this.overlayTitle.setText('Game Over');
@@ -233,18 +278,19 @@ export class Hud {
 }
 
 function layoutEvolution() {
-  const radii = FRUITS.map((_, index) => (index === FRUITS.length - 1 ? 26 : 8 + index * 1.2));
-  let angle = Phaser.Math.DegToRad(112);
-  return radii.map((radius, index) => {
-    const spot = {
+  const count = FRUITS.length;
+  const step = (Math.PI * 2) / count;
+  const start = -Math.PI / 2; // smallest at the top, growing clockwise
+  return FRUITS.map((_, index) => {
+    const angle = start + index * step;
+    // Icon size grows with tier so going around the circle clearly scales up.
+    // Minimum is kept legible; the max stays clear of the arrow arc.
+    const radius = 10 + index * (10 / (count - 1));
+    return {
       x: EVOLUTION.x + Math.cos(angle) * EVOLUTION.orbit,
       y: EVOLUTION.y + Math.sin(angle) * EVOLUTION.orbit,
       radius,
     };
-    if (index < radii.length - 1) {
-      angle -= (radius + radii[index + 1] + 8) / EVOLUTION.orbit;
-    }
-    return spot;
   });
 }
 

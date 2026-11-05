@@ -1,5 +1,5 @@
 import { BOX, FRUIT_BODY, WALL_BODY, playfield } from '../game/constants.js';
-import { fruitByTier, paintFruit } from './catalog.js';
+import { createFruitNode, fruitByTier, paintFruit } from './catalog.js';
 
 export class FruitWorld {
   constructor(scene) {
@@ -11,7 +11,7 @@ export class FruitWorld {
 
   mount() {
     const field = playfield();
-    const node = this.scene.add.circle(field.left, field.top, 18, 0xffffff).setDepth(12);
+    const node = createFruitNode(this.scene, field.left, field.top, fruitByTier(0)).setDepth(12);
     const shine = this.scene.add.circle(field.left, field.top, 6, 0xffffff, 0.45).setDepth(13);
     node.setVisible(false);
     shine.setVisible(false);
@@ -61,8 +61,12 @@ export class FruitWorld {
     preview.node.setPosition(x, y);
     preview.node.setVisible(true);
     preview.shine.setVisible(true);
-    const stroke = blocked ? 0xff4d5e : fruit.visual.stroke;
-    preview.node.setStrokeStyle(Math.max(3, radius * 0.1), stroke, 1);
+    if (fruit.visual.type === 'image') {
+      preview.node.setTint(blocked ? 0xff4d5e : 0xffffff);
+    } else {
+      const stroke = blocked ? 0xff4d5e : fruit.visual.stroke;
+      preview.node.setStrokeStyle(Math.max(3, radius * 0.1), stroke, 1);
+    }
   }
 
   hidePreview() {
@@ -85,7 +89,7 @@ export class FruitWorld {
 
   spawn(x, y, tier, motion) {
     const fruitDef = fruitByTier(tier);
-    const node = this.scene.add.circle(x, y, fruitDef.radius, fruitDef.visual.fill).setDepth(10);
+    const node = createFruitNode(this.scene, x, y, fruitDef).setDepth(10);
     const shine = this.scene.add.circle(x, y, fruitDef.radius * 0.22, 0xffffff, 0.42).setDepth(11);
     paintFruit(node, shine, fruitDef);
 

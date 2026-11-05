@@ -17,6 +17,11 @@ export const DROP_TIER_CAP = 4;
 
 export const HIGH_SCORE_KEY = 'merge-space-digital.highScore';
 
+// Audio keys (loaded in GameScene.preload).
+export const SFX_MERGE = 'sfx-merge';
+export const SFX_BOOM = 'sfx-boom';
+export const SFX_DROP = 'sfx-drop';
+
 // Outer crate. The opening is the lip; the physics walls sit on the other three sides.
 export const BOX = Object.freeze({
   x: 368,
